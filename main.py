@@ -1,12 +1,12 @@
 # use command line to input 2 files: studio songs list and live concert list file
 import sys
 import os
-import MySQLdb
 from tqdm import tqdm
-from dejavu import Dejavu
-from dejavu.recognize import FileRecognizer
 from pydub import AudioSegment
 from audiofingerprint.Fingerprinter import Fingerprinter
+
+# temp audio file directory
+temp_dir = 'temp_wav/'
 
 def split_concert_to_time_series_files(concert_path):
     temp_directory_name = 'extract_feature/dejavu/'
@@ -85,6 +85,25 @@ def strip_songs_list(songlist):
         newlist.append(songname)
     return newlist
 
+def convert_wav_to_16bit_mono(filepath):
+    if not os.path.exist(temp_dir):
+        os.mkdir(temp_dir)
+    filename, file_extention = os.path.splitext(filepath)
+    filename = filename.split('/')[-1]
+    song = AudioSegment.from_file(filepath, file_extention)
+    # setting song to 16 bit
+    song = song.set_sample_width(2)
+
+    # stereo to mono
+    song = song.set_channels(1)
+
+    # setting frame rate to 16k
+    song = song.set_frame_rate(16000)
+
+    final_path = temp_dir + filename + '.wav'
+    song.export(final_path, format='wav')
+    return final_path
+
 def main():
     if len(sys.argv) != 3:
         print ("argument number error!")
@@ -102,47 +121,6 @@ def main():
         live_concert = open(filename_live_concert_list, 'r').readline()
     except:
         print("open live concert list error!")
-    # subtask 1 starts here:
-
-    # con = MySQLdb.connect(user="root", passwd="", )
-    # cur = con.cursor()
-    # cur.execute('CREATE DATABASE IF NOT EXISTS dejavu;')
-    #
-    # config = {
-    #     "database": {
-    #         "host": "127.0.0.1",
-    #         "user": "root",
-    #         "passwd": "",
-    #         "db": "dejavu",
-    #     }
-    # }
-    # djv = Dejavu(config)
-    #
-    # song_number = 1
-    # for studio_song in tqdm(studio_songs_list):
-    #     # add songs into database
-    #     if studio_song[-1] == '\n':
-    #         studio_song = studio_song[:-1]
-    #     try:
-    #         djv.fingerprint_file(studio_song, song_number)
-    #     except:
-    #         continue
-    #     song_number += 1
-    #
-    # if live_concert[-1] == '\n':
-    #     live_concert = live_concert[:-1]
-    # live_directory_name = split_concert_to_time_series_files(live_concert)
-    #
-    # dictionary = recognize_each_concert_part(live_directory_name, djv)
-    #
-    # dic_list = change_dic_2_list(dictionary)
-    #
-    # temp_file = open('temp_result.txt', 'w')
-    # for item in dic_list:
-    #     temp_file.write(str(item) + '\n')
-    # temp_file.close()
-
-    # subtask 1 ends here
 
     # subtask 2 starts here
 
