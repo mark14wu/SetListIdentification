@@ -150,14 +150,22 @@ class Fingerprinter(object):
         """
         Prints some info about the file this Wrapper wraps and the wrapper itself.
         """
-        print " * * * * * * * "
-        print "Width of frames in seconds: " + str(self.framewidth)
-        print "Overlap between frames: " + str(self.overlap)
-        print "# of samples per frame: " + str(self.nsamples_per_frame)
-        print "# of samples between beginning of adjacent frames: " + str(self.nsamples_between_frames)
-        print " -> Resolution approx. " + str(self.resolution)
-        print "# of fourier components between 300 and 2000 Hz: " + str(self.index_width_lower_to_upper)
-        print " * * * * * * * "
+        print
+        " * * * * * * * "
+        print
+        "Width of frames in seconds: " + str(self.framewidth)
+        print
+        "Overlap between frames: " + str(self.overlap)
+        print
+        "# of samples per frame: " + str(self.nsamples_per_frame)
+        print
+        "# of samples between beginning of adjacent frames: " + str(self.nsamples_between_frames)
+        print
+        " -> Resolution approx. " + str(self.resolution)
+        print
+        "# of fourier components between 300 and 2000 Hz: " + str(self.index_width_lower_to_upper)
+        print
+        " * * * * * * * "
 
     ##############################
     def calculate_frequency_bands(self, nsamples_per_frame, frame_length):
@@ -236,11 +244,15 @@ class Fingerprinter(object):
         for i in tqdm(range(len(self.fingerprints) - block_length)):
             diff = self.block_distance(compare[:block_length], self.fingerprints_binary[i:i + block_length])
             if diff < min:
-                print "found new minimum at " + str(i) + " (" + str(
+                print
+                "found new minimum at " + str(i) + " (" + str(
                     float(i) * self.nsamples_between_frames / self.sample_rate) + ") - " + str(diff)
                 index = i
                 min = diff
 
-        print 'here is :',index  # index of frame with lowest block distance
-        print float(index) * self.nsamples_between_frames / self.sample_rate
-        return index
+        print
+        'here is :', index  # index of frame with lowest block distance
+        print
+        result_time = float(index) * self.nsamples_between_frames / self.sample_rate
+        # return index
+        return result_time

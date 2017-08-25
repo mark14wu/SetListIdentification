@@ -104,56 +104,62 @@ def convert_wav_to_16bit_mono(filepath):
     song.export(final_path, format='wav')
     return final_path
 
+def absolute_path_to_filename(filepath):
+    filename, file_extention = os.path.splitext(filepath)
+    return filename.split('/')[-1]
 def main():
     if len(sys.argv) != 3:
         print ("argument number error!")
         exit(-1)
 
-    filename_studio_songs_list = sys.argv[1]
-    filename_live_concert_list = sys.argv[2]
+    # filename_studio_songs_list = sys.argv[1]
+    # filename_live_concert_list = sys.argv[2]
+    # for testing, we give some hard code
+
+    filename_studio_songs_list = '/Users/tom55wu/Documents/ComputerScience/' \
+                                 'ResearchProjects/MIREX/SetList/lists/linkin_park_studio.txt'
+    filename_live_concert_list = '/Users/tom55wu/Documents/ComputerScience/' \
+                                 'ResearchProjects/MIREX/SetList/lists/linkin_park_live.txt'
 
     try:
-        studio_songs_list = open(filename_studio_songs_list, 'r').readlines()
+        studio_songs_list = open(filename_studio_songs_list, 'r').read()
     except:
         print("open studio songs list error!")
+        exit(-1)
     # live concert list only consists of one concert file
     try:
-        live_concert = open(filename_live_concert_list, 'r').readline()
+        live_concert = open(filename_live_concert_list, 'r').read()
     except:
         print("open live concert list error!")
+        exit(-1)
 
     # subtask 2 starts here
 
-    songname = sys.argv[1]
-    livename = "data/setList_16bit_mono.wav"
     FRAME_WIDTH = 0.1
     OVER_LAP = 0.05
 
-    # for studio_song in tqdm(studio_songs_list):
-    #     # add songs into database
-    #     if studio_song[-1] == '\n':
-    #         studio_song = studio_song[:-1]
-    #     try:
-    #         djv.fingerprint_file(studio_song, song_number)
-    #     except:
-    #         continue
-    #     song_number += 1
+    fp_songs = []
 
-    fpsongs = []
+    studio_songs_list = studio_songs_list.split('\n')
+    studio_16bit_mono_songs_list = [new_song for new_song in convert_wav_to_16bit_mono(studio_songs_list)]
 
-    studio_songs_list = strip_songs_list(studio_songs_list)
-    studio_16bmono_songs_list = studio_songs_list
+    # TODO: the length of each song
 
-    for song_filename in studio_16bmono_songs_list:
-        fpsong = Fingerprinter(filepath=song_filename, framewidth=FRAME_WIDTH, overlap=OVER_LAP)
-        fpsong.init_fingerprints()
-        fpsongs.append(fpsong)
+    for song_filename in studio_16bit_mono_songs_list:
+        fp_song = Fingerprinter(filepath=song_filename, framewidth=FRAME_WIDTH, overlap=OVER_LAP)
+        fp_song.init_fingerprints()
+        fp_songs.append(fp_song)
 
-    fplive = Fingerprinter(filepath=livename, framewidth=FRAME_WIDTH, overlap=OVER_LAP)
-    fplive.init_fingerprints()
-    # test2.print_info()
-    # print test2.block_distance(test2.fingerprints_binary,test1.fingerprints_binary)
+    studio_songs_name_list = []
+    for song_name in studio_songs_list:
+        studio_songs_name_list.append(absolute_path_to_filename(song_name))
+
+    fp_live = Fingerprinter(filepath=livename, framewidth=FRAME_WIDTH, overlap=OVER_LAP)
+    fp_live.init_fingerprints()
     ostream = open('stdout', 'a')
-    for fpsong, songname in zip(fpsongs, studio_songs_list):
-        ostream.write(fplive.find_position(fpsong))
+    for fp_song, song_name in zip(fp_songs, studio_songs_name_list):
+        ostream.write(fp_live.find_position(fp_song)) # start time of each song
+        ostream.write(' \t ')
+        # ostream.write(end time)
+        ostream.write('(for input input sond ID:%s)' % song_name) # this is only for test
     ostream.close()
