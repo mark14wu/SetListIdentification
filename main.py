@@ -102,11 +102,19 @@ def convert_wav_to_16bit_mono(filepath):
 
     final_path = temp_dir + filename + '.wav'
     song.export(final_path, format='wav')
-    return final_path
+    return final_path, len(song) / 1000
 
 def absolute_path_to_filename(filepath):
     filename, file_extention = os.path.splitext(filepath)
     return filename.split('/')[-1]
+
+def time_formatter(seconds):
+    milliseconds = int((seconds - int(seconds)) * 1000)
+    hours = int(seconds / 3600)
+    minutes = int((seconds % 3600) / 60)
+    seconds = int(seconds % 60)
+    return "%d.%d.%d.%d" % (hours, minutes, seconds, milliseconds)
+
 def main():
     if len(sys.argv) != 3:
         print ("argument number error!")
@@ -114,13 +122,14 @@ def main():
 
     # filename_studio_songs_list = sys.argv[1]
     # filename_live_concert_list = sys.argv[2]
+    # output_file_name = sys.argv[3]
     # for testing, we give some hard code
 
     filename_studio_songs_list = '/Users/tom55wu/Documents/ComputerScience/' \
                                  'ResearchProjects/MIREX/SetList/lists/linkin_park_studio.txt'
     filename_live_concert_list = '/Users/tom55wu/Documents/ComputerScience/' \
                                  'ResearchProjects/MIREX/SetList/lists/linkin_park_live.txt'
-
+    output_file_name = 'stdout'
     try:
         studio_songs_list = open(filename_studio_songs_list, 'r').read()
     except:
@@ -141,11 +150,21 @@ def main():
     fp_songs = []
 
     studio_songs_list = studio_songs_list.split('\n')
-    studio_16bit_mono_songs_list = [new_song for new_song in convert_wav_to_16bit_mono(studio_songs_list)]
-
+    # studio_16bit_mono_songs_list = [new_song for new_song in convert_wav_to_16bit_mono(studio_songs_list)]
+    # audiosegment_16bmono_list = [song for song in convert_audio_to_AudioSegment(studio_songs_list)]
     # TODO: the length of each song
 
-    for song_filename in studio_16bit_mono_songs_list:
+    studio_16bitmono_songs_pathlist = []
+    studio_songs_length_list = []
+
+    for songpath in studio_songs_list:
+        newsongpath, songlength = convert_wav_to_16bit_mono(songpath)
+        studio_16bitmono_songs_pathlist.append(newsongpath)
+        studio_songs_length_list.append(songlength)
+
+    livename = convert_wav_to_16bit_mono(live_concert)
+
+    for song_filename in studio_16bitmono_songs_pathlist:
         fp_song = Fingerprinter(filepath=song_filename, framewidth=FRAME_WIDTH, overlap=OVER_LAP)
         fp_song.init_fingerprints()
         fp_songs.append(fp_song)
@@ -156,10 +175,18 @@ def main():
 
     fp_live = Fingerprinter(filepath=livename, framewidth=FRAME_WIDTH, overlap=OVER_LAP)
     fp_live.init_fingerprints()
-    ostream = open('stdout', 'a')
-    for fp_song, song_name in zip(fp_songs, studio_songs_name_list):
-        ostream.write(fp_live.find_position(fp_song)) # start time of each song
+
+    try:
+        ostream = open(output_file_name, 'a')
+    except:
+        print("opening output file error!")
+
+    for fp_song, song_name, songlength in zip(fp_songs, studio_songs_name_list, studio_songs_length_list):
+        start_time = fp_live.find_position(fp_song)
+        end_time = start_time + songlength
+        ostream.write(start_time)
         ostream.write(' \t ')
-        # ostream.write(end time)
+        ostream.write(end time)
+        ostream.write('\n')
         ostream.write('(for input input sond ID:%s)' % song_name) # this is only for test
     ostream.close()
