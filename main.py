@@ -121,15 +121,16 @@ def time_formatter(seconds):
     hours = int(seconds / 3600)
     minutes = int((seconds % 3600) / 60)
     seconds = int(seconds % 60)
-    return "%d.%d.%d.%d" % (hours, minutes, seconds, milliseconds)
+    if hours == 0:
+        return "%02d.%02d.%03d" % (minutes, seconds, milliseconds)
+    else:
+        return "%02d.%02d.%02d.%03d" % (hours, minutes, seconds, milliseconds)
 
 def main():
 
     filename_studio_songs_list = sys.argv[1]
     filename_live_concert_list = sys.argv[2]
     output_file_name = sys.argv[3]
-
-    # TODO: remove the hard code above
 
     try:
         studio_songs_list = open(filename_studio_songs_list, 'r').read()
@@ -157,8 +158,6 @@ def main():
     fp_songs = []
 
     studio_songs_list = studio_songs_list.split('\n')
-
-    # TODO: set error correcting mechanism
 
     studio_16bitmono_songs_pathlist = []
     studio_songs_length_list = []
@@ -201,7 +200,6 @@ def main():
     right_time = window_width_percentage * livelength
     for fp_song, song_name, songlength in zip(fp_songs, studio_songs_name_list, studio_songs_length_list):
         print("Now processing %d of %d songs" % (counter, totalnum))
-        # TODO:setting the boundaries for songs
         left_index = fp_live.time_to_frameindex(left_time)
         right_index = fp_live.time_to_frameindex(right_time)
         start_time = fp_live.find_position(fp_song, left_index, right_index)

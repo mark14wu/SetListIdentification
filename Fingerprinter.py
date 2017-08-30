@@ -251,15 +251,15 @@ class Fingerprinter(object):
         for i in tqdm(range(len(self.fingerprints) - block_length)[start_frame:end_frame]):
             diff = self.block_distance(compare[:block_length], self.fingerprints_binary[i:i + block_length])
             if diff < min:
-                print
-                "found new minimum at " + str(i) + " (" + str(
-                    float(i) * self.nsamples_between_frames / self.sample_rate) + ") - " + str(diff)
+                # print
+                # "found new minimum at " + str(i) + " (" + str(
+                #     float(i) * self.nsamples_between_frames / self.sample_rate) + ") - " + str(diff)
                 index = i
                 min = diff
-
-        print
-        'here is :', index  # index of frame with lowest block distance
-        print
+        print(min)
+        # print
+        # 'here is :', index  # index of frame with lowest block distance
+        # print
         result_time = float(index) * self.nsamples_between_frames / self.sample_rate
         # return index has been changed to return time
         return result_time
