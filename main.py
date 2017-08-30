@@ -121,10 +121,7 @@ def time_formatter(seconds):
     hours = int(seconds / 3600)
     minutes = int((seconds % 3600) / 60)
     seconds = int(seconds % 60)
-    if hours == 0:
-        return "%02d.%02d.%03d" % (minutes, seconds, milliseconds)
-    else:
-        return "%02d.%02d.%02d.%03d" % (hours, minutes, seconds, milliseconds)
+    return "%d.%d.%d.%d" % (hours, minutes, seconds, milliseconds)
 
 def main():
 
