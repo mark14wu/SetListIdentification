@@ -3,7 +3,7 @@ import sys
 import os
 from tqdm import tqdm
 from pydub import AudioSegment
-from audiofingerprint.Fingerprinter import Fingerprinter
+from Fingerprinter import Fingerprinter
 
 # temp audio file directory
 temp_dir = 'temp_wav/'
@@ -86,11 +86,17 @@ def strip_songs_list(songlist):
     return newlist
 
 def convert_wav_to_16bit_mono(filepath):
-    if not os.path.exist(temp_dir):
+    if not os.path.exists(temp_dir):
         os.mkdir(temp_dir)
     filename, file_extention = os.path.splitext(filepath)
+
+    # removing the starting '.' of extension
+    file_extention = file_extention[1:]
     filename = filename.split('/')[-1]
+    final_path = temp_dir + filename + '.wav'
+
     song = AudioSegment.from_file(filepath, file_extention)
+
     # setting song to 16 bit
     song = song.set_sample_width(2)
 
@@ -98,10 +104,11 @@ def convert_wav_to_16bit_mono(filepath):
     song = song.set_channels(1)
 
     # setting frame rate to 16k
-    song = song.set_frame_rate(16000)
+    # song = song.set_frame_rate(16000)
 
-    final_path = temp_dir + filename + '.wav'
+    # exporting songs
     song.export(final_path, format='wav')
+
     return final_path, len(song) / 1000
 
 def absolute_path_to_filename(filepath):
@@ -109,6 +116,7 @@ def absolute_path_to_filename(filepath):
     return filename.split('/')[-1]
 
 def time_formatter(seconds):
+    # The lengths of songs are measured in seconds
     milliseconds = int((seconds - int(seconds)) * 1000)
     hours = int(seconds / 3600)
     minutes = int((seconds % 3600) / 60)
@@ -116,26 +124,21 @@ def time_formatter(seconds):
     return "%d.%d.%d.%d" % (hours, minutes, seconds, milliseconds)
 
 def main():
-    if len(sys.argv) != 3:
-        print ("argument number error!")
-        exit(-1)
 
-    # filename_studio_songs_list = sys.argv[1]
-    # filename_live_concert_list = sys.argv[2]
-    # output_file_name = sys.argv[3]
-    # for testing, we give some hard code
+    filename_studio_songs_list = sys.argv[1]
+    filename_live_concert_list = sys.argv[2]
+    output_file_name = sys.argv[3]
 
-    filename_studio_songs_list = '/Users/tom55wu/Documents/ComputerScience/' \
-                                 'ResearchProjects/MIREX/SetList/lists/linkin_park_studio.txt'
-    filename_live_concert_list = '/Users/tom55wu/Documents/ComputerScience/' \
-                                 'ResearchProjects/MIREX/SetList/lists/linkin_park_live.txt'
-    output_file_name = 'stdout'
+    # TODO: remove the hard code above
+
     try:
         studio_songs_list = open(filename_studio_songs_list, 'r').read()
     except:
         print("open studio songs list error!")
         exit(-1)
+
     # live concert list only consists of one concert file
+
     try:
         live_concert = open(filename_live_concert_list, 'r').read()
     except:
@@ -144,27 +147,33 @@ def main():
 
     # subtask 2 starts here
 
-    FRAME_WIDTH = 0.1
-    OVER_LAP = 0.05
+    # some parameters
+    FRAME_WIDTH = 20.0
+    OVER_LAP = 31.0 / 32.0
+    # window_width = 100
+    window_width_percentage = 1.0 / 3.0
+    # parameters finished
 
     fp_songs = []
 
     studio_songs_list = studio_songs_list.split('\n')
-    # studio_16bit_mono_songs_list = [new_song for new_song in convert_wav_to_16bit_mono(studio_songs_list)]
-    # audiosegment_16bmono_list = [song for song in convert_audio_to_AudioSegment(studio_songs_list)]
-    # TODO: the length of each song
+
+    # TODO: set error correcting mechanism
 
     studio_16bitmono_songs_pathlist = []
     studio_songs_length_list = []
 
-    for songpath in studio_songs_list:
+    print('Now converting raw wave files into 16bit mono wave files')
+
+    for songpath in tqdm(studio_songs_list):
         newsongpath, songlength = convert_wav_to_16bit_mono(songpath)
         studio_16bitmono_songs_pathlist.append(newsongpath)
         studio_songs_length_list.append(songlength)
 
-    livename = convert_wav_to_16bit_mono(live_concert)
+    livename, livelength = convert_wav_to_16bit_mono(live_concert)
 
-    for song_filename in studio_16bitmono_songs_pathlist:
+    print('Now fingerprinting studio songs')
+    for song_filename in tqdm(studio_16bitmono_songs_pathlist):
         fp_song = Fingerprinter(filepath=song_filename, framewidth=FRAME_WIDTH, overlap=OVER_LAP)
         fp_song.init_fingerprints()
         fp_songs.append(fp_song)
@@ -173,20 +182,42 @@ def main():
     for song_name in studio_songs_list:
         studio_songs_name_list.append(absolute_path_to_filename(song_name))
 
-    fp_live = Fingerprinter(filepath=livename, framewidth=FRAME_WIDTH, overlap=OVER_LAP)
-    fp_live.init_fingerprints()
+    print('Now fingerprinting live concert')
+
+    for i in tqdm(range(1)):
+        fp_live = Fingerprinter(filepath=livename, framewidth=FRAME_WIDTH, overlap=OVER_LAP)
+        fp_live.init_fingerprints()
 
     try:
-        ostream = open(output_file_name, 'a')
+        ostream = open(output_file_name, 'w')
     except:
         print("opening output file error!")
 
+    print('Now starting to find the locations of studio songs in the live')
+    counter = 1
+    totalnum = len(fp_songs)
+    # left_time, right_time = get_left_and_right(livelength, counter, totalnum, window_width)
+    left_time = 0
+    right_time = window_width_percentage * livelength
     for fp_song, song_name, songlength in zip(fp_songs, studio_songs_name_list, studio_songs_length_list):
-        start_time = fp_live.find_position(fp_song)
+        print("Now processing %d of %d songs" % (counter, totalnum))
+        # TODO:setting the boundaries for songs
+        left_index = fp_live.time_to_frameindex(left_time)
+        right_index = fp_live.time_to_frameindex(right_time)
+        start_time = fp_live.find_position(fp_song, left_index, right_index)
         end_time = start_time + songlength
-        ostream.write(start_time)
+        print ("%s" % song_name)
+        print("left bound is %s" % time_formatter(left_time))
+        print("right bound is %s" % time_formatter(right_time))
+        print("start time is %s" % time_formatter(start_time))
+        ostream.write(time_formatter(start_time))
         ostream.write(' \t ')
-        ostream.write(end time)
+        ostream.write(time_formatter(end_time))
         ostream.write('\n')
-        ostream.write('(for input input sond ID:%s)' % song_name) # this is only for test
+        counter += 1
+        left_time += songlength
+        right_time += songlength
     ostream.close()
+
+if __name__ == '__main__':
+    main()
